@@ -1,0 +1,5 @@
+{
+  "hacs": "1.6.0",
+  "name": "Evertech EVT-800",
+  "homeassistant": "2025.4.1"
+}
