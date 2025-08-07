@@ -224,7 +224,7 @@ class EnvertechEVT800Sensor(CoordinatorEntity, SensorEntity):
 
         self._value = value
         self._device = device
-        self._key = description.key
+        self._key = name
 
         self._attr_device_info = device_info
         self._attr_unique_id = f"{config_entry_unique_id}-{name}"
