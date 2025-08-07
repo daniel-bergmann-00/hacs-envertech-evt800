@@ -238,7 +238,7 @@ class EnvertechEVT800Sensor(CoordinatorEntity, SensorEntity):
         ):
             name_prefix = "ENVERTECH EVT800"
 
-        return f"{name_prefix} {super()._attr_name}"
+        return f"{name_prefix} {self._key}"
 
     @callback
     def _handle_coordinator_update(self) -> None:
