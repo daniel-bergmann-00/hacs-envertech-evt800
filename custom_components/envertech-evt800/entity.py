@@ -4,7 +4,6 @@ from typing import Any
 
 import pyenvertechevt800
 
-from .entity import EnvertechEVT800Entity
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -21,18 +20,11 @@ from homeassistant.const import (
     UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
-from homeassistant.helpers.update_coordinator import (
-    DataUpdateCoordinator,
-)
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import (
-    DOMAIN,
-    ENVERTECH_EVT800_COORDINATOR,
-    ENVERTECH_EVT800_DEVICE_INFO,
-    ENVERTECH_EVT800_OBJECT,
-)
+from .const import DOMAIN, ENVERTECH_EVT800_COORDINATOR, ENVERTECH_EVT800_OBJECT
+from .entity import EnvertechEVT800Entity
 
 SENSORS: dict[str, SensorEntityDescription] = {
     "timestamp": SensorEntityDescription(
@@ -47,13 +39,13 @@ SENSORS: dict[str, SensorEntityDescription] = {
         key="id_1",
         entity_registry_enabled_default=False,
         entity_registry_visible_default=True,
-        translation_key="mptt_id_1",
+        translation_key="mppt_id_1",
     ),
     "id_2": SensorEntityDescription(
         key="id_2",
         entity_registry_enabled_default=False,
         entity_registry_visible_default=True,
-        translation_key="mptt_id_2",
+        translation_key="mppt_id_2",
     ),
     "input_voltage_1": SensorEntityDescription(
         key="input_voltage_1",
@@ -179,19 +171,17 @@ async def async_setup_entry(
     envertech_data = hass.data[DOMAIN][config_entry.entry_id]
 
     evt800: pyenvertechevt800.EnvertechEVT800 = envertech_data[ENVERTECH_EVT800_OBJECT]
-    device_info: DeviceInfo = envertech_data[ENVERTECH_EVT800_DEVICE_INFO]
-
-    entity: EnvertechEVT800Entity = EnvertechEVT800Entity(evt800, config_entry)
+    coordinator: DataUpdateCoordinator = envertech_data[ENVERTECH_EVT800_COORDINATOR]
 
     entities = []
-    for name, value in SENSORS.items():
+    for name, description in SENSORS.items():
         data = evt800.data.get(name)
         entities.append(
             EnvertechEVT800Sensor(
-                entity,
-                config_entry.unique_id or f"{evt800.ip_address}-{evt800.port}",
-                value,
-                device_info,
+                evt800,
+                coordinator,
+                config_entry,
+                description,
                 name,
                 data,
             )
@@ -205,27 +195,26 @@ class EnvertechEVT800Sensor(EnvertechEVT800Entity, SensorEntity):
 
     def __init__(
         self,
-        entity: EnvertechEVT800Entity,
-        config_entry_unique_id: str,
+        evt800: pyenvertechevt800.EnvertechEVT800,
+        coordinator: DataUpdateCoordinator,
+        config_entry: ConfigEntry[Any],
         description: SensorEntityDescription | None,
-        device_info: DeviceInfo,
         name: str,
         value: Any,
     ) -> None:
         """Initialize the sensor."""
-        super().__init__(entity)
+        super().__init__(evt800, coordinator, config_entry)
         if description is not None:
             self.entity_description = description
         else:
             self._attr_name = name
 
         self._value = value
-        self._device = entity.evt800
+        self._device = evt800
         self._key = name
 
         self._attr_has_entity_name = True
-        self._attr_device_info = device_info
-        self._attr_unique_id = f"{config_entry_unique_id}-{name}"
+        self._attr_unique_id = f"{config_entry.unique_id}-{name}"
         self._attr_native_value = self._device.data[self._key]
 
     @callback
